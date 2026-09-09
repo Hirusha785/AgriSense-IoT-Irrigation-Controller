@@ -1,187 +1,409 @@
-﻿# IoT Irrigation Monitoring & Controller — Blynk Cloud Edition
+# 🌱💧 AgriSense IoT Smart Irrigation Monitoring & Control System
 
-## Architecture Overview
-
-```
-Proteus Simulation
-  └── Arduino UNO (ATMEGA328P)
-        │  Hardware UART (D0/D1) @ 9600 8N1
-        ▼
-      COMPIM  ←── Proteus virtual serial port component
-        │  COM5 (Proteus side)
-        ▼
-  Virtual COM Port Pair  (e.g. COM5 ↔ COM6)
-        │  COM6 (Python side)
-        ▼
-  blynk_bridge.py  (Python 3)
-        │  HTTPS
-        ▼
-  blynk.cloud  →  Blynk App / Web Dashboard
-```
-
-> **Local fail-safe**: If Python stops, Blynk goes offline, or Internet drops,
-> the Arduino continues operating in AUTO mode independently.
+![Arduino](https://img.shields.io/badge/Arduino-UNO-00979D?style=for-the-badge&logo=arduino)
+![Proteus](https://img.shields.io/badge/Simulation-Proteus-blue?style=for-the-badge)
+![IoT](https://img.shields.io/badge/Technology-IoT-orange?style=for-the-badge)
+![Web Dashboard](https://img.shields.io/badge/Dashboard-Web%20Application-purple?style=for-the-badge)
 
 ---
 
-## Files
+## 🌿 Project Overview
 
-| File | Purpose |
-|------|---------|
-| `IoT_IRRIGATION_MONITORING_SYSTEM.ino` | Updated Arduino firmware |
-| `blynk_bridge.py` | Python cloud bridge |
-| `requirements.txt` | Python dependencies |
-| `.env.example` | Config template |
-| `README.md` | This document |
+**AgriSense IoT Smart Irrigation Monitoring & Control System** is an intelligent agriculture automation solution designed to monitor plant environmental conditions and automatically control irrigation and cooling systems.
 
----
+The system combines:
 
-## Step 1 — Proteus Modifications
+🌱 Embedded hardware simulation  
+🤖 Arduino-based control logic  
+🌡️ Environmental monitoring  
+💧 Automated irrigation management  
+📡 IoT communication architecture  
+🖥️ Real-time web dashboard visualization  
 
-### 1a. Remove Virtual Terminal
-- Open the Proteus project.
-- Right-click the VTERM component → Delete.
-- Delete any wires connected to it on D0/D1.
-
-### 1b. Add COMPIM
-1. Press P in Proteus → search COMPIM.
-2. Place it on the schematic.
-3. Wire it:
-   - Arduino D1 (PD1/TXD) → COMPIM RXD
-   - COMPIM TXD → Arduino D0 (PD0/RXD)
-4. Right-click COMPIM → Edit Properties:
-   - Physical Port: COM5 (Proteus side)
-   - Baud Rate: 9600
-   - Data Bits: 8
-   - Parity: None
-   - Stop Bits: 1
-   - Flow Control: None
-
-### 1c. Add Manual Buttons (A2 and A4)
-Two missing manual control buttons must be added:
-- A2 Pump Button: SPST → Arduino PC2 (A2) to GND
-- A4 Fan Button: SPST → Arduino PC4 (A4) to GND
-No external resistor needed (INPUT_PULLUP used in code).
-The existing A1 (Mode) button keeps its external pull-up resistor.
-
-### 1d. Update HEX File Path
-- Click Arduino UNO → Edit Properties → Program File.
-- Set to: IoT_IRRIGATION_MONITORING_SYSTEM\build\arduino.avr.uno\IoT_IRRIGATION_MONITORING_SYSTEM.ino.hex
-- Rebuild in Arduino IDE first.
+The project is developed using **Proteus Simulation** with Arduino UNO and includes a modern smart agriculture dashboard for monitoring system conditions.
 
 ---
 
-## Step 2 — Virtual COM Port Pair (Windows)
+# ✨ Key Features
 
-Install com0com: https://sourceforge.net/projects/com0com/
-Create pair: COM5 (Proteus) <-> COM6 (Python)
-Update COMPIM property and .env SERIAL_PORT accordingly.
+## 🌱 Smart Irrigation Automation
 
----
+The system monitors soil moisture conditions and automatically controls the water pump.
 
-## Step 3 — Blynk Setup
+Features:
 
-1. Create account at https://blynk.cloud
-2. Create Template: Name=IoT Irrigation, Hardware=Other
-3. Create Device from template
-4. Copy Auth Token to .env
+✅ Real-time soil moisture monitoring  
+✅ Automatic watering decision  
+✅ Dry soil detection  
+✅ Pump ON/OFF control  
+✅ Prevention of overwatering  
 
----
-
-## Blynk Datastreams
-
-| Pin | Name | Type | Min | Max | Unit |
-|-----|------|------|-----|-----|------|
-| V0 | Temperature | Double | -10 | 80 | C |
-| V1 | Humidity | Double | 0 | 100 | % |
-| V2 | Soil Moisture | Integer | 0 | 100 | % |
-| V3 | Pump State | Integer | 0 | 1 | |
-| V4 | Fan State | Integer | 0 | 1 | |
-| V5 | Current Mode | Integer | 0 | 1 | |
-| V6 | Manual Pump Cmd | Integer | 0 | 1 | |
-| V7 | Manual Fan Cmd | Integer | 0 | 1 | |
-| V8 | Mode Command | Integer | 0 | 1 | |
-| V9 | Soil Voltage | Double | 0 | 5 | V |
-| V10 | Soil Raw ADC | Integer | 0 | 1023 | |
 
 ---
 
-## Blynk Dashboard Widgets
+## 🌡️ Environmental Monitoring
 
-| Widget | Type | Pin | Notes |
-|--------|------|-----|-------|
-| Temperature | Gauge | V0 | 0-60C |
-| Humidity | Gauge | V1 | 0-100% |
-| Soil Moisture | Gauge | V2 | 0-100% |
-| Pump Status | LED | V3 | Green=ON |
-| Fan Status | LED | V4 | Blue=ON |
-| Current Mode | Value Display | V5 | 0=MANUAL 1=AUTO |
-| Manual Pump | Switch | V6 | MANUAL mode only |
-| Manual Fan | Switch | V7 | MANUAL mode only |
-| AUTO/MANUAL | Switch | V8 | 0=MANUAL 1=AUTO |
+The system continuously monitors:
 
----
+🌡️ Temperature  
+💧 Air Humidity  
+🌱 Soil Moisture  
 
-## Step 4 — Python Bridge
 
-```
-pip install -r requirements.txt
-copy .env.example .env
-# Edit .env with your token and COM port
-python blynk_bridge.py
-```
+Sensor values are displayed through:
+
+- LCD Display 📟
+- Virtual Terminal 🖥️
+- Web Dashboard 📊
+
 
 ---
 
-## Serial Protocol
+# 🤖 Operating Modes
 
-Arduino -> Python (every 10 s):
-{"temp":31.0,"hum":89.0,"soil":70,"raw":716,"v":3.50,"pump":0,"fan":0,"mode":1}
+## 🔄 Automatic Mode
 
-Python -> Arduino (commands):
-MODE:AUTO
-MODE:MANUAL
-PUMP:ON  (MANUAL mode only)
-PUMP:OFF (MANUAL mode only)
-FAN:ON   (MANUAL mode only)
-FAN:OFF  (MANUAL mode only)
+The system automatically controls actuators according to sensor readings.
 
----
 
-## Test Plan
+### 💧 Water Pump Logic
 
-| Test | Temp | Soil | Mode | Expected |
-|------|------|------|------|---------|
-| T1 | 30C | 20% | AUTO | Pump=ON, Fan=OFF |
-| T2 | 37C | 80% | AUTO | Pump=OFF, Fan=ON |
-| T3 | 37C | 20% | AUTO | Pump=ON, Fan=ON |
-| T4 | 30C | 80% | AUTO | Pump=OFF, Fan=OFF |
-| T5 | any | any | MANUAL | A2=Pump toggle, A4=Fan toggle |
-| T6 | Blynk V8=0 | V6=1, V7=1 | -> MANUAL | Pump ON, Fan ON |
-| T7 | Blynk V8=1 | | -> AUTO | Sensors take control |
-| T8 | Internet down | | AUTO | Arduino continues |
-| T9 | Python stopped | | AUTO | Arduino continues |
 
----
+Soil Moisture <= 35%
 
-## Troubleshooting
+    ↓
 
-| Symptom | Fix |
-|---------|-----|
-| Cannot open COM6 | Start com0com, check Device Manager |
-| No Blynk data | Check BLYNK_AUTH_TOKEN in .env |
-| HTTP 400 from Blynk | Delete and recreate device, get new token |
-| Arduino not responding | Rebuild HEX, update PROGRAM= path in Proteus |
-| Pump/Fan ignore commands | Must be in MANUAL mode first |
-| DHT shows ERROR | Wait 2-3s after Proteus start for DHT warm-up |
+  DRY SOIL
+
+    ↓
+
+Water Pump ON 💧
+
+
+
+Soil Moisture > 35%
+
+    ↓
+
+MOIST / WET SOIL
+
+    ↓
+
+Water Pump OFF 🛑
+
 
 ---
 
-## Migrating to Real ESP8266
+### ❄️ Cooling Fan Logic
 
-1. Remove COMPIM from schematic
-2. Connect real ESP8266 to D2/D3 (SoftwareSerial already defined)
-3. Add Blynk Arduino library: BlynkSimpleEsp8266.h
-4. Replace JSON telemetry with Blynk.virtualWrite() calls
-5. Replace command parsing with BLYNK_WRITE(Vx) handlers
-6. Sensor and control logic needs ZERO changes
+
+
+Temperature >= 35°C
+
+    ↓
+
+ Fan ON ❄️
+
+
+
+Temperature < 35°C
+
+    ↓
+
+ Fan OFF
+
+---
+
+# 🎮 Manual Control Mode
+
+The system supports manual user control.
+
+Users can independently control:
+
+💧 Water Pump  
+❄️ Cooling Fan  
+
+
+Manual controls are available through:
+
+- Physical push buttons
+- Web dashboard interface
+
+
+---
+
+# 🖥️ Smart Agriculture Web Dashboard
+
+The project includes a modern real-time monitoring dashboard designed for smart farming applications.
+
+Dashboard capabilities:
+
+## 📊 Live Monitoring
+
+Displays:
+
+🌡️ Temperature
+
+💧 Air Humidity
+
+🌱 Soil Moisture
+
+
+Example:
+
+
+Temperature : 33.5 °C
+
+Humidity : 79 %
+
+Soil Moisture : 49 %
+
+
+
+---
+
+## 📈 Real-Time Data Visualization
+
+The dashboard provides:
+
+📊 Live sensor graphs
+
+📉 Historical variations
+
+⏱️ Time-based monitoring
+
+
+Displayed parameters:
+
+- Temperature variation
+- Humidity variation
+- Soil moisture variation
+
+
+---
+
+## ⚙️ System Control Panel
+
+The dashboard displays actuator status:
+
+### 💧 Water Pump
+
+Shows:
+
+- Current state
+- Automatic trigger condition
+- ON/OFF status
+
+
+Example:
+
+
+Water Pump
+
+Turns ON when soil <= 35%
+
+
+
+---
+
+### ❄️ Cooling Fan
+
+Shows:
+
+- Cooling system activity
+- Current ON/OFF state
+- Temperature-based activation
+
+
+Example:
+
+
+Cooling Fan
+
+ACTIVE - Cooling system
+
+
+
+---
+
+# 🏗️ System Architecture
+
+
+             🌡️ Sensors
+                |
+                |
+                ↓
+
+          🤖 Arduino UNO
+
+                |
+    ----------------------------
+
+    |            |             |
+
+    ↓            ↓             ↓
+
+ 📟 LCD      ⚙️ L293D      📡 ESP8266
+
+                |
+
+    --------------------
+
+    |                  |
+
+    ↓                  ↓
+
+ 💧 Pump          ❄️ Fan
+
+
+                |
+
+                ↓
+
+        🖥️ Web Dashboard
+
+---
+
+# 🔧 Hardware Components
+
+| Component | Purpose |
+|-----------|---------|
+| 🤖 Arduino UNO | Main processing controller |
+| 🌡️ DHT11 | Temperature and humidity sensing |
+| 🌱 Soil Moisture Sensor / Potentiometer | Soil condition simulation |
+| ⚙️ L293D | Motor driver |
+| 💧 DC Motor | Water pump simulation |
+| ❄️ DC Motor | Cooling fan simulation |
+| 📟 LCD 16x2 | Local display |
+| 📡 ESP8266 | IoT communication module |
+| 🔘 Push Buttons | Manual control |
+
+---
+
+# 📌 Arduino Pin Configuration
+
+| Component | Arduino Pin |
+|-----------|-------------|
+| DHT11 Data | A0 |
+| Auto/Manual Button | A1 |
+| Manual Pump Button | A2 |
+| Soil Moisture Input | A3 |
+| Manual Fan Button | A4 |
+| ESP8266 TX | D2 |
+| ESP8266 RX | D3 |
+| Fan Driver | D4, D5 |
+| Pump Driver | D6, D7 |
+| LCD Display | D8-D13 |
+
+---
+
+# 🖥️ Simulation Environment
+
+## Proteus Simulation
+
+Used for:
+
+✅ Circuit design  
+✅ Arduino simulation  
+✅ Sensor testing  
+✅ Motor control validation  
+✅ Embedded system verification  
+
+
+## Arduino IDE
+
+Used for:
+
+✅ Microcontroller programming  
+✅ Firmware development  
+✅ Embedded logic implementation  
+
+
+---
+
+# 📊 Virtual Terminal Monitoring
+
+The system provides detailed runtime information:
+
+
+
+================================
+
+Time (GMT): 00:00:10
+
+Temperature : 31.0 C
+
+Humidity : 89 %
+
+Soil RAW : 717
+
+Soil Voltage: 3.50 V
+
+Soil Moisture: 70 %
+
+Soil Status : MOIST
+
+Water Pump : OFF
+
+Cooling Fan : OFF
+
+Mode : AUTO
+
+================================
+
+
+---
+
+# 🚀 Future Improvements
+
+Future hardware deployment can include:
+
+
+📡 Real ESP8266/ESP32 communication
+
+☁️ Cloud IoT platform integration
+
+📱 Mobile application
+
+🌦️ Weather API integration
+
+💧 Water level monitoring
+
+🔔 Smart notifications
+
+🤖 AI-based irrigation prediction
+
+🔋 Solar-powered irrigation system
+
+
+---
+
+# 🌾 Applications
+
+Suitable for:
+
+🌱 Smart agriculture
+
+🏡 Home gardening
+
+🏭 Greenhouses
+
+🌿 Plant monitoring systems
+
+🚜 Precision farming
+
+
+---
+
+# 👨‍💻 Author
+
+**FERNANDO S.M.H.G.**
+
+
+---
+
+# 📜 License
+
+This project is developed for educational and research purposes.
+
+Feel free to explore, modify and improve the system. 🌱🚀
