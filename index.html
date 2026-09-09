@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Modern IoT Irrigation Dashboard - Simulation Mode">
+  <title>Smart Irrigation Simulator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- Chart.js for Graphs -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* ============================================================
+       DESIGN TOKENS - GLASSMORPHISM & PREMIUM AESTHETIC
+       ============================================================ */
+    :root {
+      --text-primary: #ffffff;
+      --text-secondary: #e2e8f0;
+      --text-muted: #cbd5e1;
+      
+      --glass-bg: rgba(15, 23, 42, 0.45);
+      --glass-bg-hover: rgba(15, 23, 42, 0.6);
+      --glass-border: rgba(255, 255, 255, 0.15);
+      --glass-border-hover: rgba(255, 255, 255, 0.3);
+      --glass-highlight: rgba(255, 255, 255, 0.05);
+
+      --color-temp: #f97316;
+      --color-hum: #38bdf8;
+      --color-soil: #34d399;
+      --color-pump: #60a5fa;
+      --color-fan: #c084fc;
+      
+      --glow-temp: rgba(249, 115, 22, 0.4);
+      --glow-hum: rgba(56, 189, 248, 0.4);
+      --glow-soil: rgba(52, 211, 153, 0.4);
+
+      --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      
+      --transition: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      color: var(--text-primary);
+      min-height: 100vh;
+      /* Background fallback chain */
+      background: linear-gradient(to bottom, rgba(15, 23, 42, 0.6), rgba(15, 23, 42, 0.9)), 
+                  url('background.jpg') center/cover fixed no-repeat,
+                  url('https://images.unsplash.com/photo-1550989460-0adf9ea622e2?q=80&w=2000&auto=format&fit=crop') center/cover fixed no-repeat;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 30px 24px;
+      width: 100%;
+      flex-grow: 1;
+    }
+
+    /* ============ HEADER ============ */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding: 20px 30px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      box-shadow: var(--shadow-glass);
+      animation: slideDown 0.6s ease-out forwards;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .logo {
+      font-size: 32px;
+      filter: drop-shadow(0 0 10px rgba(52, 211, 153, 0.5));
+    }
+
+    .title h1 {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #fff, #a7f3d0);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .title p {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 16px;
+      background: rgba(139, 92, 246, 0.2);
+      border: 1px solid rgba(139, 92, 246, 0.4);
+      border-radius: 50px;
+      font-weight: 600;
+      font-size: 13px;
+      color: #ddd6fe;
+      box-shadow: 0 0 20px rgba(139, 92, 246, 0.2);
+    }
+    
+    .status-badge .dot {
+      width: 10px;
+      height: 10px;
+      background: #a78bfa;
+      border-radius: 50%;
+      box-shadow: 0 0 10px #a78bfa;
+      animation: pulse 2s infinite;
+    }
+
+    /* ============ MODE TABS ============ */
+    .mode-tabs {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 30px;
+      animation: fadeUp 0.6s ease-out forwards;
+    }
+
+    .tabs-container {
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      border-radius: 50px;
+      padding: 5px;
+      display: flex;
+      gap: 5px;
+      box-shadow: var(--shadow-glass);
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 12px 30px;
+      border-radius: 50px;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      transition: var(--transition);
+      letter-spacing: 0.05em;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-primary);
+    }
+
+    .tab-btn.active {
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .tab-btn.active.auto-mode {
+      background: linear-gradient(135deg, rgba(52, 211, 153, 0.2), rgba(16, 185, 129, 0.4));
+      border-color: rgba(52, 211, 153, 0.5);
+    }
+
+    .tab-btn.active.manual-mode {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.4));
+      border-color: rgba(245, 158, 11, 0.5);
+    }
+
+    /* ============ MAIN GRID ============ */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 30px;
+      margin-bottom: 30px;
+    }
+
+    /* ============ GLASS CARDS ============ */
+    .glass-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 28px;
+      padding: 30px;
+      box-shadow: var(--shadow-glass);
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      transform: translateY(20px);
+      animation: fadeUp 0.6s ease-out forwards;
+    }
+
+    .glass-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--glass-border-hover), transparent);
+      opacity: 0.5;
+    }
+
+    .glass-card:hover {
+      background: var(--glass-bg-hover);
+      border-color: var(--glass-border-hover);
+      transform: translateY(-5px);
+    }
+
+    .glass-card:nth-child(1) { animation-delay: 0.1s; }
+    .glass-card:nth-child(2) { animation-delay: 0.2s; }
+    .glass-card:nth-child(3) { animation-delay: 0.3s; }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* ============ SENSOR VALUES ============ */
+    .sensor-display {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 5px;
+      margin: 20px 0;
+    }
+
+    .sensor-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 64px;
+      font-weight: 700;
+      line-height: 1;
+      text-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
+    }
+
+    .sensor-unit {
+      font-size: 24px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* Colors */
+    .temp .sensor-value { color: var(--color-temp); text-shadow: 0 0 30px var(--glow-temp); }
+    .hum .sensor-value { color: var(--color-hum); text-shadow: 0 0 30px var(--glow-hum); }
+    .soil .sensor-value { color: var(--color-soil); text-shadow: 0 0 30px var(--glow-soil); }
+
+    /* ============ SLIDERS FOR SIMULATION ============ */
+    .slider-container {
+      margin-top: auto;
+      padding-top: 20px;
+    }
+
+    .slider-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .modern-slider {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 8px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .modern-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #fff;
+      cursor: pointer;
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+      transition: var(--transition);
+    }
+
+    .modern-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    .temp .modern-slider::-webkit-slider-thumb { background: var(--color-temp); box-shadow: 0 0 15px var(--glow-temp); }
+    .hum .modern-slider::-webkit-slider-thumb { background: var(--color-hum); box-shadow: 0 0 15px var(--glow-hum); }
+    .soil .modern-slider::-webkit-slider-thumb { background: var(--color-soil); box-shadow: 0 0 15px var(--glow-soil); }
+    
+    /* Disabled Sliders in Auto Mode */
+    .auto-running .modern-slider {
+      opacity: 0.5;
+      pointer-events: none; /* User can't touch them while they are auto-moving */
+    }
+
+    /* ============ GRAPH SECTION ============ */
+    .graph-section {
+      margin-bottom: 30px;
+      animation: fadeUp 0.6s ease-out forwards;
+      animation-delay: 0.35s;
+      opacity: 0;
+    }
+    
+    .graph-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 28px;
+      padding: 30px;
+      box-shadow: var(--shadow-glass);
+      height: 350px;
+      position: relative;
+    }
+    
+    .graph-card canvas {
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    /* ============ ACTUATORS SECTION ============ */
+    .actuators-section {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 30px;
+    }
+    
+    .actuator-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 30px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      box-shadow: var(--shadow-glass);
+      transition: var(--transition);
+      animation: fadeUp 0.6s ease-out forwards;
+      animation-delay: 0.4s;
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    
+    .actuator-card:hover {
+      background: var(--glass-bg-hover);
+      border-color: var(--glass-border-hover);
+    }
+
+    .actuator-info {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .actuator-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--glass-border);
+      transition: var(--transition);
+      color: var(--text-muted);
+    }
+    
+    /* PUMP ANIMATION */
+    .pump-animation {
+      position: relative;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      justify-content: space-around;
+      align-items: flex-start;
+      overflow: hidden;
+    }
+    .water-drop {
+      width: 4px;
+      height: 12px;
+      background-color: transparent;
+      border-radius: 4px;
+      opacity: 0;
+    }
+    
+    .actuator-icon.active.pump {
+      background: rgba(96, 165, 250, 0.15);
+      border-color: var(--color-pump);
+      box-shadow: 0 0 25px rgba(96, 165, 250, 0.4);
+      color: var(--color-pump);
+    }
+    
+    .actuator-icon.active.pump .water-drop {
+      background-color: var(--color-pump);
+      animation: rain 0.8s infinite cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .actuator-icon.active.pump .water-drop:nth-child(1) { animation-delay: 0.0s; }
+    .actuator-icon.active.pump .water-drop:nth-child(2) { animation-delay: 0.3s; }
+    .actuator-icon.active.pump .water-drop:nth-child(3) { animation-delay: 0.6s; }
+
+    /* FAN ANIMATION */
+    .fan-svg {
+      width: 36px;
+      height: 36px;
+      transition: var(--transition);
+    }
+    
+    .actuator-icon.active.fan {
+      background: rgba(192, 132, 252, 0.15);
+      border-color: var(--color-fan);
+      box-shadow: 0 0 25px rgba(192, 132, 252, 0.4);
+      color: var(--color-fan);
+    }
+    
+    .actuator-icon.active.fan .fan-svg {
+      animation: spin 0.6s linear infinite;
+    }
+
+    .actuator-details h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .actuator-details p {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* Switch */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 34px;
+    }
+
+    .switch input { 
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 34px;
+      transition: .4s;
+      border: 1px solid var(--glass-border);
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 26px;
+      width: 26px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      border-radius: 50%;
+      transition: .4s;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    input:checked + .slider.pump-slider {
+      background-color: var(--color-pump);
+      border-color: var(--color-pump);
+      box-shadow: 0 0 15px rgba(96, 165, 250, 0.5);
+    }
+    
+    input:checked + .slider.fan-slider {
+      background-color: var(--color-fan);
+      border-color: var(--color-fan);
+      box-shadow: 0 0 15px rgba(192, 132, 252, 0.5);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+    
+    /* Disabled state for switches */
+    .switch input:disabled + .slider {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* ============ ANIMATIONS ============ */
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(167, 139, 250, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(167, 139, 250, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(167, 139, 250, 0); }
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+    
+    @keyframes rain {
+      0% { transform: translateY(-10px); opacity: 0; }
+      30% { opacity: 1; }
+      80% { transform: translateY(30px); opacity: 1; }
+      100% { transform: translateY(40px); opacity: 0; }
+    }
+
+    /* ============ RESPONSIVE ============ */
+    @media (max-width: 768px) {
+      .header {
+        flex-direction: column;
+        gap: 20px;
+        text-align: center;
+      }
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+      .actuators-section {
+        grid-template-columns: 1fr;
+      }
+      .graph-card {
+        height: 250px;
+      }
+    }
+  </style>
+</head>
+<body id="app-body" class="auto-running">
+
+<div class="container">
+  <!-- HEADER -->
+  <header class="header">
+    <div class="brand">
+      <div class="logo">🌱</div>
+      <div class="title">
+        <h1>Smart Agriculture</h1>
+        <p>Advanced Irrigation Monitoring System</p>
+      </div>
+    </div>
+    <div class="status-badge">
+      <div class="dot"></div>
+      SIMULATION MODE
+    </div>
+  </header>
+
+  <!-- MODE TABS -->
+  <div class="mode-tabs">
+    <div class="tabs-container">
+      <button class="tab-btn active auto-mode" id="btn-auto">🤖 Auto Control (Self-Simulating)</button>
+      <button class="tab-btn" id="btn-manual">✋ Manual Control</button>
+    </div>
+  </div>
+
+  <!-- SENSORS GRID -->
+  <div class="dashboard-grid">
+    
+    <!-- Temperature -->
+    <div class="glass-card temp">
+      <div class="card-header">
+        <div class="card-title">🌡️ Temperature</div>
+        <div style="font-family:'JetBrains Mono'; font-size:12px; color:var(--text-muted)">V0</div>
+      </div>
+      <div class="sensor-display">
+        <span class="sensor-value" id="temp-val">28.5</span>
+        <span class="sensor-unit">°C</span>
+      </div>
+      <p style="text-align:center; font-size:13px; color:var(--text-muted); margin-bottom: 20px;" id="temp-status">Optimal for growth</p>
+      
+      <div class="slider-container">
+        <div class="slider-label">
+          <span id="slider-desc-temp">Auto-Simulating...</span>
+          <span id="temp-indicator" style="color:var(--color-temp)">28.5 °C</span>
+        </div>
+        <input type="range" class="modern-slider" id="temp-slider" min="0" max="60" step="0.5" value="28.5">
+      </div>
+    </div>
+
+    <!-- Humidity -->
+    <div class="glass-card hum">
+      <div class="card-header">
+        <div class="card-title">💧 Air Humidity</div>
+        <div style="font-family:'JetBrains Mono'; font-size:12px; color:var(--text-muted)">V1</div>
+      </div>
+      <div class="sensor-display">
+        <span class="sensor-value" id="hum-val">65</span>
+        <span class="sensor-unit">%</span>
+      </div>
+      <p style="text-align:center; font-size:13px; color:var(--text-muted); margin-bottom: 20px;" id="hum-status">Normal humidity</p>
+      
+      <div class="slider-container">
+        <div class="slider-label">
+          <span id="slider-desc-hum">Auto-Simulating...</span>
+          <span id="hum-indicator" style="color:var(--color-hum)">65 %</span>
+        </div>
+        <input type="range" class="modern-slider" id="hum-slider" min="0" max="100" step="1" value="65">
+      </div>
+    </div>
+
+    <!-- Soil Moisture -->
+    <div class="glass-card soil">
+      <div class="card-header">
+        <div class="card-title">🪴 Soil Moisture</div>
+        <div style="font-family:'JetBrains Mono'; font-size:12px; color:var(--text-muted)">V2</div>
+      </div>
+      <div class="sensor-display">
+        <span class="sensor-value" id="soil-val">42</span>
+        <span class="sensor-unit">%</span>
+      </div>
+      <p style="text-align:center; font-size:13px; color:var(--text-muted); margin-bottom: 20px;" id="soil-status">Adequate moisture</p>
+      
+      <div class="slider-container">
+        <div class="slider-label">
+          <span id="slider-desc-soil">Auto-Simulating...</span>
+          <span id="soil-indicator" style="color:var(--color-soil)">42 %</span>
+        </div>
+        <input type="range" class="modern-slider" id="soil-slider" min="0" max="100" step="1" value="42">
+      </div>
+    </div>
+
+  </div>
+
+  <!-- REAL-TIME GRAPHS SECTION -->
+  <div class="graph-section">
+    <div class="graph-card">
+      <div class="card-header" style="position: absolute; top: 30px; left: 30px; right: 30px;">
+        <div class="card-title">📊 Real-Time Variations (wrt Time)</div>
+      </div>
+      <canvas id="variationChart"></canvas>
+    </div>
+  </div>
+
+  <!-- ACTUATORS SECTION -->
+  <h2 style="font-size: 16px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-secondary); margin: 0 0 15px 10px;" id="actuators-title">System Controls (Auto-Triggered)</h2>
+  <div class="actuators-section">
+    
+    <!-- Pump Control -->
+    <div class="actuator-card">
+      <div class="actuator-info">
+        <!-- New Animated Pump Icon -->
+        <div class="actuator-icon pump" id="pump-icon">
+          <div class="pump-animation">
+            <div class="water-drop"></div>
+            <div class="water-drop"></div>
+            <div class="water-drop"></div>
+          </div>
+        </div>
+        <div class="actuator-details">
+          <h3>Water Pump</h3>
+          <p id="pump-desc">Turns ON when soil ≤ 35%</p>
+        </div>
+      </div>
+      <label class="switch">
+        <!-- Disabled by default in AUTO mode -->
+        <input type="checkbox" id="pump-switch" disabled>
+        <span class="slider pump-slider"></span>
+      </label>
+    </div>
+
+    <!-- Fan Control -->
+    <div class="actuator-card">
+      <div class="actuator-info">
+        <!-- New Animated Fan SVG -->
+        <div class="actuator-icon fan" id="fan-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="fan-svg">
+            <path d="M12 12c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0 0c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5z" />
+            <path d="M12 12c0-2.76 2.24-5 5-5s5 2.24 5 5-2.24 5-5 5-5-2.24-5-5zm0 0c0 2.76-2.24 5-5 5s-5-2.24-5-5 2.24-5 5-5 5 2.24 5 5z" />
+          </svg>
+        </div>
+        <div class="actuator-details">
+          <h3>Cooling Fan</h3>
+          <p id="fan-desc">Turns ON when temp ≥ 35°C</p>
+        </div>
+      </div>
+      <label class="switch">
+        <!-- Disabled by default in AUTO mode -->
+        <input type="checkbox" id="fan-switch" disabled>
+        <span class="slider fan-slider"></span>
+      </label>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // Elements
+  const body = document.getElementById('app-body');
+  const tempSlider = document.getElementById('temp-slider');
+  const tempVal = document.getElementById('temp-val');
+  const tempIndicator = document.getElementById('temp-indicator');
+  const tempStatus = document.getElementById('temp-status');
+
+  const humSlider = document.getElementById('hum-slider');
+  const humVal = document.getElementById('hum-val');
+  const humIndicator = document.getElementById('hum-indicator');
+  const humStatus = document.getElementById('hum-status');
+
+  const soilSlider = document.getElementById('soil-slider');
+  const soilVal = document.getElementById('soil-val');
+  const soilIndicator = document.getElementById('soil-indicator');
+  const soilStatus = document.getElementById('soil-status');
+
+  const pumpSwitch = document.getElementById('pump-switch');
+  const pumpIcon = document.getElementById('pump-icon');
+  const pumpDesc = document.getElementById('pump-desc');
+
+  const fanSwitch = document.getElementById('fan-switch');
+  const fanIcon = document.getElementById('fan-icon');
+  const fanDesc = document.getElementById('fan-desc');
+
+  const btnAuto = document.getElementById('btn-auto');
+  const btnManual = document.getElementById('btn-manual');
+  const actuatorsTitle = document.getElementById('actuators-title');
+
+  // Descriptions for Sliders
+  const descTemp = document.getElementById('slider-desc-temp');
+  const descHum = document.getElementById('slider-desc-hum');
+  const descSoil = document.getElementById('slider-desc-soil');
+
+  // State
+  let isAutoMode = true;
+
+  // Mode Switching Logic
+  btnAuto.addEventListener('click', () => {
+    isAutoMode = true;
+    body.classList.add('auto-running');
+    btnAuto.classList.add('active', 'auto-mode');
+    btnManual.classList.remove('active', 'manual-mode');
+    
+    // Disable manual switches
+    pumpSwitch.disabled = true;
+    fanSwitch.disabled = true;
+    actuatorsTitle.textContent = "System Controls (Auto-Triggered)";
+    
+    // Update labels
+    descTemp.textContent = "Auto-Simulating...";
+    descHum.textContent = "Auto-Simulating...";
+    descSoil.textContent = "Auto-Simulating...";
+
+    updateSimulation(); // Re-trigger logic
+  });
+
+  btnManual.addEventListener('click', () => {
+    isAutoMode = false;
+    body.classList.remove('auto-running');
+    btnManual.classList.add('active', 'manual-mode');
+    btnAuto.classList.remove('active', 'auto-mode');
+    
+    // Enable manual switches
+    pumpSwitch.disabled = false;
+    fanSwitch.disabled = false;
+    actuatorsTitle.textContent = "System Controls (Manual Override)";
+    
+    // Update labels
+    descTemp.textContent = "Adjust Manually";
+    descHum.textContent = "Adjust Manually";
+    descSoil.textContent = "Adjust Manually";
+    pumpDesc.textContent = "Manual Control Active";
+    fanDesc.textContent = "Manual Control Active";
+  });
+
+  // Manual Switch Listeners
+  pumpSwitch.addEventListener('change', () => {
+    if(!isAutoMode) {
+      if(pumpSwitch.checked) {
+        pumpIcon.classList.add('active');
+        pumpDesc.innerHTML = '<strong style="color:var(--color-pump)">ACTIVE (Manual)</strong> - Watering crops';
+      } else {
+        pumpIcon.classList.remove('active');
+        pumpDesc.textContent = "Manual Control Active";
+      }
+    }
+  });
+
+  fanSwitch.addEventListener('change', () => {
+    if(!isAutoMode) {
+      if(fanSwitch.checked) {
+        fanIcon.classList.add('active');
+        fanDesc.innerHTML = '<strong style="color:var(--color-fan)">ACTIVE (Manual)</strong> - Cooling system';
+      } else {
+        fanIcon.classList.remove('active');
+        fanDesc.textContent = "Manual Control Active";
+      }
+    }
+  });
+
+  // Base Simulation Logic (Updates UI from sliders)
+  function updateSimulation() {
+    const t = parseFloat(tempSlider.value);
+    const h = parseInt(humSlider.value);
+    const s = parseInt(soilSlider.value);
+
+    // Update displays
+    tempVal.textContent = t.toFixed(1);
+    tempIndicator.textContent = t.toFixed(1) + ' °C';
+    
+    humVal.textContent = h;
+    humIndicator.textContent = h + ' %';
+    
+    soilVal.textContent = s;
+    soilIndicator.textContent = s + ' %';
+
+    // Status Texts
+    if (t >= 35) tempStatus.innerHTML = '<span style="color:#ef4444">Critical Heat! Fan Active.</span>';
+    else if (t >= 28) tempStatus.textContent = 'Optimal for growth';
+    else tempStatus.textContent = 'Cool temperature';
+
+    if (h < 40) humStatus.textContent = 'Dry air';
+    else if (h > 80) humStatus.textContent = 'High humidity';
+    else humStatus.textContent = 'Normal humidity';
+
+    if (s <= 35) soilStatus.innerHTML = '<span style="color:#ef4444">Dry soil! Pump Active.</span>';
+    else if (s <= 70) soilStatus.textContent = 'Adequate moisture';
+    else soilStatus.textContent = 'Soil is saturated';
+
+    // Auto Triggers ONLY in Auto Mode
+    if (isAutoMode) {
+      const pumpActive = s <= 35;
+      pumpSwitch.checked = pumpActive;
+      if (pumpActive) {
+        pumpIcon.classList.add('active');
+        pumpDesc.innerHTML = '<strong style="color:var(--color-pump)">ACTIVE</strong> - Watering crops';
+      } else {
+        pumpIcon.classList.remove('active');
+        pumpDesc.textContent = 'Turns ON when soil ≤ 35%';
+      }
+
+      const fanActive = t >= 35;
+      fanSwitch.checked = fanActive;
+      if (fanActive) {
+        fanIcon.classList.add('active');
+        fanDesc.innerHTML = '<strong style="color:var(--color-fan)">ACTIVE</strong> - Cooling system';
+      } else {
+        fanIcon.classList.remove('active');
+        fanDesc.textContent = 'Turns ON when temp ≥ 35°C';
+      }
+    }
+  }
+
+  // Event Listeners for Manual Slider Adjustments
+  tempSlider.addEventListener('input', updateSimulation);
+  humSlider.addEventListener('input', updateSimulation);
+  soilSlider.addEventListener('input', updateSimulation);
+
+  /* ============================================================
+     CHART.JS - REAL-TIME GRAPH LOGIC
+     ============================================================ */
+  const ctx = document.getElementById('variationChart').getContext('2d');
+  
+  Chart.defaults.color = '#cbd5e1';
+  Chart.defaults.font.family = "'Outfit', sans-serif";
+
+  const dataPoints = 30; // Show last 30 updates
+  const labels = Array.from({length: dataPoints}, () => '');
+  const tempData = Array.from({length: dataPoints}, () => 28.5);
+  const humData = Array.from({length: dataPoints}, () => 65);
+  const soilData = Array.from({length: dataPoints}, () => 42);
+
+  const variationChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Temperature (°C)',
+          data: tempData,
+          borderColor: '#f97316',
+          backgroundColor: 'rgba(249, 115, 22, 0.1)',
+          borderWidth: 2,
+          tension: 0.4,
+          fill: true,
+          pointRadius: 0
+        },
+        {
+          label: 'Humidity (%)',
+          data: humData,
+          borderColor: '#38bdf8',
+          backgroundColor: 'rgba(56, 189, 248, 0.1)',
+          borderWidth: 2,
+          tension: 0.4,
+          fill: true,
+          pointRadius: 0
+        },
+        {
+          label: 'Soil Moisture (%)',
+          data: soilData,
+          borderColor: '#34d399',
+          backgroundColor: 'rgba(52, 211, 153, 0.1)',
+          borderWidth: 2,
+          tension: 0.4,
+          fill: true,
+          pointRadius: 0
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', align: 'end', labels: { usePointStyle: true, boxWidth: 8, padding: 20 } },
+        tooltip: { mode: 'index', intersect: false, backgroundColor: 'rgba(15, 23, 42, 0.8)', titleColor: '#fff', bodyColor: '#cbd5e1', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1 }
+      },
+      scales: {
+        x: { grid: { display: false, drawBorder: false } },
+        y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, min: 0, max: 100, ticks: { stepSize: 20 } }
+      },
+      layout: { padding: { top: 40 } }
+    }
+  });
+
+  /* ============================================================
+     AUTO-DRIFT SIMULATION ENGINE
+     ============================================================ */
+  let simTime = 0;
+
+  setInterval(() => {
+    // 1. If in Auto Mode, let the sliders move automatically using Sine waves
+    if (isAutoMode) {
+      simTime += 0.05; // Time step
+      
+      // Calculate realistic drifting values
+      // Temp: drifts between ~20°C and ~40°C
+      const newT = 30 + Math.sin(simTime) * 10;
+      // Hum: drifts between ~40% and ~80%
+      const newH = 60 + Math.cos(simTime * 0.7) * 20;
+      // Soil: drifts between ~15% and ~75%
+      const newS = 45 + Math.sin(simTime * 0.4) * 30;
+
+      tempSlider.value = newT;
+      humSlider.value = newH;
+      soilSlider.value = newS;
+      
+      updateSimulation(); // This will trigger the pump/fan if limits are crossed
+    }
+
+    // 2. Read the current slider values (whether auto-moved or manually moved)
+    let baseT = parseFloat(tempSlider.value);
+    let baseH = parseFloat(humSlider.value);
+    let baseS = parseFloat(soilSlider.value);
+
+    // 3. Add tiny random noise to chart so lines aren't perfectly smooth
+    const currentT = Math.max(0, Math.min(60, baseT + (Math.random() - 0.5) * 1.0));
+    const currentH = Math.max(0, Math.min(100, baseH + (Math.random() - 0.5) * 1.5));
+    const currentS = Math.max(0, Math.min(100, baseS + (Math.random() - 0.5) * 1.0));
+
+    // 4. Update the Chart
+    tempData.shift(); tempData.push(currentT);
+    humData.shift(); humData.push(currentH);
+    soilData.shift(); soilData.push(currentS);
+    
+    const now = new Date();
+    const timeLabel = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+    labels.shift(); labels.push(timeLabel);
+
+    variationChart.update();
+  }, 1000);
+
+  // Initial call
+  updateSimulation();
+
+</script>
+
+</body>
+</html>
